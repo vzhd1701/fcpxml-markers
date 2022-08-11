@@ -90,7 +90,7 @@ jobs:
       - name: Pack up binary for macos
         run: |
           mkdir dist_bin
-          zip -q -j dist_bin/bin_${{ env.PACKAGE_NAME_U }}_${{ env.APP_VERSION }}_macos_x64.zip dist/${{ env.PACKAGE_NAME }}
+          (cd dist && zip -q -r ../dist_bin/bin_${{ env.PACKAGE_NAME_U }}_${{ env.APP_VERSION }}_macos_x64.zip ${{ env.PACKAGE_NAME }})
 
       - name: Save release binaries for macOS
         uses: actions/upload-artifact@v2
