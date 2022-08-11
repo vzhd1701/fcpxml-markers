@@ -79,16 +79,18 @@ jobs:
 
       - name: Install requirements
         run: |
-          brew install gnu-sed
+          brew install gnu-sed tree
 
       - name: Build with pyinstaller
         run: ./scripts/pyinstaller/build_mac.sh
 
-      - name: Make directory for bins
-        run: mkdir dist_bin
+      - name: Post-build state
+        run: tree -L 3
 
       - name: Pack up binary for macos
-        run: zip -q -j dist_bin/bin_${{ env.PACKAGE_NAME_U }}_${{ env.APP_VERSION }}_macos_x64.zip ./dist/${{ env.PACKAGE_NAME }}
+        run: |
+          mkdir dist_bin
+          zip -q -j dist_bin/bin_${{ env.PACKAGE_NAME_U }}_${{ env.APP_VERSION }}_macos_x64.zip dist/${{ env.PACKAGE_NAME }}
 
       - name: Save release binaries for macOS
         uses: actions/upload-artifact@v2
