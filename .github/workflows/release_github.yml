@@ -76,6 +76,10 @@ jobs:
         with:
           python-version: ${{ env.BUILD_PYTHON_VERSION }}
 
+      - name: Install requirements
+        run: |
+          brew install gnu-sed
+
       - name: Build with pyinstaller
         run: ./scripts/pyinstaller/build_mac.sh
 
