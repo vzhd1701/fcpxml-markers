@@ -70,6 +70,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: release_dist_reqs
+          path: build
 
       - name: Set up Python ${{ env.BUILD_PYTHON_VERSION }}
         uses: actions/setup-python@v2
