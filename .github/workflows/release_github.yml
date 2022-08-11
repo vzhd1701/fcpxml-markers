@@ -1,0 +1,130 @@
+name: release_github
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Release after build'
+        required: true
+        default: 'no'
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+env:
+  BUILD_PYTHON_VERSION: 3.8
+  BUILD_POETRY_VERSION: 1.1.13
+  PACKAGE_NAME: fcpxml-markers
+  PACKAGE_NAME_U: fcpxml_markers
+
+jobs:
+  build_python:
+    runs-on: ubuntu-latest
+    env:
+      POETRY_VIRTUALENVS_CREATE: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python ${{ env.BUILD_PYTHON_VERSION }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.BUILD_PYTHON_VERSION }}
+
+      - name: Set up Poetry ${{ env.BUILD_POETRY_VERSION }}
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: ${{ env.BUILD_POETRY_VERSION }}
+
+      - name: Export requirements
+        run: poetry export --without-hashes -f requirements.txt --output requirements.txt
+
+      - name: Build project for distribution
+        run: poetry build
+
+      - name: Save release python requirements
+        uses: actions/upload-artifact@v2
+        with:
+          name: release_dist_reqs
+          path: requirements.txt
+
+      - name: Save release python packages
+        uses: actions/upload-artifact@v2
+        with:
+          name: release_dist_python
+          path: dist
+
+  build_binaries:
+    needs: build_python
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get version
+        shell: bash
+        run: |
+          APP_VERSION=$(perl -n -e'/^__version__ = "([^"]+)"$/ && print $1' ${{ env.PACKAGE_NAME_U }}/version.py)
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+
+      - name: Load release python requirements
+        uses: actions/download-artifact@v2
+        with:
+          name: release_dist_reqs
+
+      - name: Set up Python ${{ env.BUILD_PYTHON_VERSION }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.BUILD_PYTHON_VERSION }}
+
+      - name: Build with pyinstaller
+        run: ./scripts/pyinstaller/build_mac.sh
+
+      - name: Make directory for bins
+        run: mkdir dist_bin
+
+      - name: Pack up binary for macos
+        run: zip -q -j dist_bin/bin_${{ env.PACKAGE_NAME_U }}_${{ env.APP_VERSION }}_macos_x64.zip ./dist/${{ env.PACKAGE_NAME }}
+
+      - name: Save release binaries for macOS
+        uses: actions/upload-artifact@v2
+        with:
+          name: release_dist_bin_macos
+          path: dist_bin
+
+  release:
+    if: github.event_name == 'push' || github.event.inputs.release == 'yes'
+    needs: [build_binaries]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Extract release changelog
+        run: |
+          sed "0,/### \[/d;/### \[/Q" CHANGELOG.md > release_changelog
+          echo -n "**Full Changelog**: " >> release_changelog
+          sed -n 's/### \[.*\](\(.*\)) (.*/\1/p' CHANGELOG.md | head -1 >> release_changelog
+
+      - name: Get tag version
+        run: |
+          APP_VERSION=$(sed -n 's/^__version__ = "\([^"]\+\)"$/\1/p' ${{ env.PACKAGE_NAME_U }}/version.py)
+          echo "TAG_VERSION=v$APP_VERSION" >> $GITHUB_ENV
+
+      - name: Load release python packages
+        uses: actions/download-artifact@v2
+        with:
+          name: release_dist_python
+          path: dist
+
+      - name: Load release binaries for macos
+        uses: actions/download-artifact@v2
+        with:
+          name: release_dist_bin_macos
+          path: dist
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          bodyFile: release_changelog
+          artifacts: "dist/*"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ env.TAG_VERSION }}
+          draft: true

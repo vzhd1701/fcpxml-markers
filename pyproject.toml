@@ -1,0 +1,53 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "fcpxml-markers"
+version = "0.1.0"
+description = "Extract markers from FCPXML into CSV or GIF"
+authors = ["vzhd1701 <vzhd1701@gmail.com>"]
+readme = "README.md"
+include = ["CHANGELOG.md"]
+license = "MIT"
+repository = "https://github.com/vzhd1701/fcpxml-markers"
+keywords = ["fcpxml", "csv", "gif", "export", "markers"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "Natural Language :: English",
+    "Environment :: Console",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft",
+    "Operating System :: Unix",
+    "Topic :: Internet",
+    "Topic :: Terminals",
+    "Topic :: Utilities",
+]
+
+[tool.poetry.urls]
+"Changelog" = "https://github.com/vzhd1701/fcpxml-markers/blob/master/CHANGELOG.md"
+
+[tool.poetry.scripts]
+fcpxml-markers = "fcpxml_markers.cli:main"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.9.0 || >3.9.0,<4.0"
+OpenTimelineIO = "0.14.1"
+av = "^9.2.0"
+Pillow = "^9.2.0"
+imageio = "^2.21.1"
+
+[tool.poetry.dev-dependencies]
+isort = "^5.10.1"
+mdformat = "0.7.7"
+black = "^22.6.0"
+safety = "^2.1.1"
+pre-commit = "^2.20.0"
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+skip_gitignore = true
